@@ -1,21 +1,20 @@
+# -*- coding: utf-8 -*-
 from dataclasses import dataclass
-
 from typing import List, Any, Tuple
-import torch
-from sklearn.decomposition import PCA
-import albumentations as A
 import numpy as np
 import torchvision
-from sklearn.neighbors import KNeighborsClassifier
+import albumentations as A
 
 
 @dataclass
 class KNNDataset:
+    """Dataset of KNN algorithm"""
+
     xtrain: np.ndarray
     ytrain: np.array
     xtest: np.ndarray
     ytest: np.array
-    
+
 
 class Dataset:
     """
@@ -27,31 +26,38 @@ class Dataset:
         self,
         data_path: str,
         transforms: A.Compose,
-
     ) -> None:
         self.data_path = data_path
         self.transforms = transforms
-        
-    def __getitem__(self, idx): 
-        pass 
 
     def __call__(self):
-        
-        # get all the dataset 
+        # get all the dataset
         image_list, label_list = self.load_data()
         num_instances = len(image_list)
 
         # return as numpy array
         image_list = np.stack(image_list)
-        
-        return image_list.reshape(num_instances,-1), np.stack(label_list)
-    
-    def apply_augmentations(self, pil_image):
+
+        return image_list.reshape(num_instances, -1), np.stack(label_list)
+
+    def apply_augmentations(self, pil_image) -> Any:
+        """Apply A.Compose to an PIL image.
+
+        Args:
+            pil_image (PIL): PIL image format
+
+        Returns:
+            image: PIL image with transformation
+        """
         image = self.transforms(image=pil_image)["image"]
-        return image 
+        return image
 
+    def load_data(self) -> Tuple(List[Any], List[int]):
+        """Given a path: directory/label/item, returns list of items and labels
 
-    def load_data(self): 
+        Returns:
+            Tuple (List[PIL image], List[int])
+        """
         dataset = torchvision.datasets.ImageFolder(self.data_path)
         images = []
         labels = []
@@ -60,4 +66,4 @@ class Dataset:
             img = self.apply_augmentations(img)
             images.append(img.ravel())
             labels.append(label)
-        return images, labels 
+        return images, labels

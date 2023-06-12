@@ -4,6 +4,7 @@ from math import ceil
 from statistics import mean
 import torch
 
+
 def get_samples(amount: int, dataset: Any) -> Any:
     """Get sample with normal distribution of a Dataset object
 
