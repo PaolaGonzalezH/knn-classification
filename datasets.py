@@ -1,103 +1,133 @@
-import numpy as np
 from statistics import mean
-import dataclasses
-import functools
-import pathlib
-import torchvision
-from typing import List, Any 
-from skimage.transform import resize
-from PIL import Image
+from math import ceil
+import random
 
-@dataclasses.dataclass
-class VectorImage:
-    vector: list
-    label_index : int
-
-#Missing: binarize image with threshold, maybe gray filter
-
-pip install albumentations
-
+from typing import List, Any, Tuple
+import torch
+from sklearn.decomposition import PCA
 import albumentations as A
+import numpy as np
+import torchvision
 
-img = ...
 
-transformed_img = transforms('image'=image)
+def get_samples(amount: int, dataset: Any) -> Any:
+    """Get sample with normal distribution of a Dataset object
 
-def apply_tranform_tr(img: np.ndarray) -> np.ndarray:
-    transforms = A.Compose([A.Resize(), A.Normalize(...)])
-    return transforms('image'=img)
+    Args:
+        amount (int): how many elements from dataset to take
+        dataset (Dataset): Dataset object
 
-#Data/train/...
-dataset_train = torchvision.datasets.ImageFolder(tr_path)
-dataset_test = torchvision.datasets.ImageFolder(te_path)
+    Returns:
+        Dataset: sample with normal distribution
+    """
+    dataset_idx = random.sample(range(0, len(dataset)), amount)
+    return torch.utils.data.Subset(dataset, dataset_idx)
 
-dataset[0]
-PIL.Image..., int
+
+def get_mean(dataset: List[tuple]) -> tuple:
+    """Mean of dataset image size
+
+    Args:
+        dataset (List[tuple]): Torch dataset with PIL image and label
+
+    Returns:
+        tuple: ceil of height and width
+    """
+    sizes = [elem[0].size for elem in dataset]
+    height = mean([h[0] for h in sizes])
+    width = mean([w[1] for w in sizes])
+    return ceil(height), ceil(width)
+
+
+def mean_sample(dataset: List[tuple], ratio: float = 0.75) -> tuple:
+    """Apply mean of sample
+
+    Args:
+        dataset (List[tuple]): Torch sample mean
+
+    Returns:
+        tuple: ceil of height and width
+    """
+    samples = get_samples(ceil(len(dataset) * ratio), dataset)
+    return get_mean(samples)
 
 
 class Dataset:
-    def __init__(self, path, transformed = False):
-        self.path = path
-        self.transformed = transformed
-        self.__xtrain, self.__xtest  = Dataset.data_load()
+    """
+    Dataset class given a folder split into train and validation.
+    Loads images and transforms into matrix.
+    """
 
-    def __len__(self):
-        return len(list(pathlib.Path(self.path).rglob("*.jpg")))
+    def __init__(
+        self,
+        path_te: str,
+        path_tr: str,
+        transform_tr: A.Compose,
+        transform_te: A.Compose,
+        representation: str = "pca",
+    ) -> None:
+        self.path_tr = path_tr
+        self.path_te = path_te
+        self.transform_tr = transform_tr
+        self.transform_te = transform_te
+        self.__xtrain, self.__ytrain, self.__xtest, self.__ytest = Dataset.data_load(
+            self
+        )
+        self.featurize(representation)
 
-    def data_load(self):
+    def data_load(self) -> Tuple[np.ndarray, ...]:
+        dataset_train = torchvision.datasets.ImageFolder(self.path_tr)
+        dataset_test = torchvision.datasets.ImageFolder(self.path_tr)
+
+        xtrain, ytrain = self.split(dataset_train)
+        xtest, ytest = self.split(dataset_test, "test")
+        return xtrain, ytrain, xtest, ytest
+
+    def split(
+        self, data: torchvision.datasets.VisionDataset, dset: str = "train"
+    ) -> Tuple[np.ndarray, np.ndarray]:
         xtrain = []
-        xtest = []
+        ytrain = []
 
-        dataset = list(pathlib.Path(self.path).rglob("*.jpg"))
-        _, class_to_idx = torchvision.datasets.folder.find_classes(dir=self.path)
-
-        for inst in dataset:
-            instancia = inst.parent.split('/')
-            label = instancia[-1]
-
-            instance = Dataset.img_to_matrix(str(inst),class_to_idx[label])
-
-            if instancia[-2] == "train":
-                xtrain.append(instance)
+        for image, label in data:
+            image = np.asarray(image)
+            if dset == "train":
+                image = self.transform_tr(image=image)["image"]
             else:
-                xtest.append(instance)
+                image = self.transform_te(image=image)["image"]
 
-        if self.transformed:
-            xtrain,xtest = self.resize_datasets(xtrain,xtest)
-        return xtrain, xtest
+            xtrain.append(image)
+            ytrain.append(np.array(label))
 
-    def resize_dataset(self,xtrain,xtest):
-        width, height = self.get_size(xtrain,xtest)
-        xtrain_resized = []
-        xtest_resized = []
+        return np.dstack(xtrain).T, np.dstack(ytrain)
 
-        for data in xtrain:
-            new_vector = resize(data.vector,(height,width))
-            xtrain_resized.append(VectorImage( new_vector,data.label_index )) 
+    def _pca_representation(self):
+        print(self.__xtrain.squeeze())
+        pca_tr = PCA(n_components=1)
+        pca_te = PCA(n_components=1)
 
-        for data in xtest:
-            new_vector = resize(data.vector,(height,width))
-            xtest_resized.append(VectorImage(data.idx, new_vector,data.label_index ))
-        return xtrain_resized, xtest_resized 
+        pca_tr.fit(self.__xtrain)
+        pca_te.fit(self.__xtest)
 
-    def img_to_matrix(self,filepath,index):
-        vector = np.asarray(Image.open(filepath))
-        return VectorImage(vector,index)
+        self.__xtrain = pca_tr.components_
+        self.__xtest = pca_te.components_
 
-
-    def get_size(self,train, test):
-        width = [w.size[0] for w in train+test]
-        height = [h.size[1] for h in train+test]
-        return mean(width), mean(height)
-
-    def augment_data(self, ...):
-        ...
+    def featurize(self, rep: str) -> None:
+        if rep == "pca":
+            self._pca_representation()
 
     @property
     def xtrain(self):
         return self.__xtrain
-    
-    @property 
+
+    @property
     def xtest(self):
         return self.__xtest
-    
+
+    @property
+    def ytrain(self):
+        return self.__ytrain
+
+    @property
+    def ytest(self):
+        return self.__ytest
