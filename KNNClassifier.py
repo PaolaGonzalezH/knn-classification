@@ -1,5 +1,4 @@
 from typing import List, Any
-from PIL import Image
 from numpy.linalg import norm
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -13,10 +12,10 @@ class KNNClassifier:
         self.xtest = data.xtest
         self.ytest = data.ytest
 
-    def train(self) -> object:
-        return self.classifier(self.classifier.fit(self.xtrain, self.ytrain))
+    def train(self) -> None:
+        self.classifier.fit(self.xtrain, self.ytrain)
 
-    def predict(self) -> object:
+    def predict(self) -> List[int]:
         return self.classifier.predict(self.xtest)
 
     def evaluate(self) -> float:
