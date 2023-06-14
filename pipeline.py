@@ -1,58 +1,47 @@
-import numpy as np
+# -*- coding: utf-8 -*-
+import warnings
+import logging
+import yaml
+from yaml.loader import SafeLoader
 import albumentations as A
-from sklearn.decomposition import PCA
 
 from KNNClassifier import KNNClassifier
 from datasets import KNNDataset, Dataset
 
+warnings.simplefilter("ignore")
 
-def extrac_features_pca(data: np.ndarray) -> np.ndarray(float):
-    """Tansfomation of vector space of images with PCA
-
-    Args:
-        data (np.ndarray): Images matrix representation.
-
-    Returns:
-        (np.ndarray): Data transformed with components.
-    """
-    pca = PCA(n_components=32)
-    pca.fit(data)
-    return pca.transform(data)
+logging.basicConfig(level=logging.INFO)
 
 
 def main() -> None:
-    """Main loop for extracting data and training model"""
-    augm_tr = A.Compose(
-        [
-            A.Resize(256, 256, 3),
-            A.Flip(p=0.5),
-            A.Rotate(),
-            # A.ToGray()
-        ]
-    )
-    augm_te = A.Compose([A.Resize(256, 256, 3)])
+    """
+    Main loop for extracting data and training model
+    """
+
+    # Open the file and load the file
+    with open("config.yaml", encoding="utf-8") as file:
+        configargs = yaml.load(file, Loader=SafeLoader)
+
+    augm_tr = A.Compose([A.Resize(100, 100, 3)])
+    augm_te = A.Compose([A.Resize(100, 100, 3)])
 
     train_data, train_labels = Dataset(
-        "~/Documents/block_one/17_flowers/train", augm_tr
+        configargs["path_tr"], augm_tr, configargs["histogram"], configargs["flatten"]
     )()
     val_data, val_labels = Dataset(
-        "~/Documents/block_one/17_flowers/validation", augm_te
+        configargs["path_tr"],
+        augm_te,
+        configargs["histogram"],
+        configargs["flatten"],
     )()
 
-    # call pca here
-    train_component = extrac_features_pca(train_data)
-    val_component = extrac_features_pca(val_data)
-
     # instantiate KNNDataset
-    processed_dataset = KNNDataset(
-        train_component, train_labels, val_component, val_labels
-    )
+    processed_dataset = KNNDataset(train_data, train_labels, val_data, val_labels)
 
-    model = KNNClassifier(processed_dataset, k=17)
+    model = KNNClassifier(processed_dataset, k=configargs["k"])
     model.train()
-    predictions = np.asanyarray(model.predict())
-    metric = model.evaluate()
-    print(metric)
+    # predictions = np.asanyarray(model.predict())
+    model.evaluate()
 
 
 if __name__ == "__main__":

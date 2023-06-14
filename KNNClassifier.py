@@ -1,5 +1,9 @@
 from typing import List
+import logging
 from sklearn.neighbors import KNeighborsClassifier
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 class KNNClassifier:
@@ -16,6 +20,7 @@ class KNNClassifier:
     def train(self) -> None:
         """Training KNN Classifier with matrices X and Y.
         Dimensions (N-images, M-features) and (N-images) respectively"""
+        logging.info("Training KNN classifier.")
         self.classifier.fit(self.xtrain, self.ytrain)
 
     def predict(self) -> List[int]:
@@ -25,6 +30,7 @@ class KNNClassifier:
         Returns:
             List[int]: List of label predictions of matrix (N-predictions)
         """
+        logging.info("Predicting validation set.")
         return self.classifier.predict(self.xtest)
 
     def evaluate(self) -> float:
@@ -33,4 +39,6 @@ class KNNClassifier:
         Returns:
             float: accuracy of prediction
         """
-        return self.classifier.score(self.xtest, self.ytest)
+        metric = self.classifier.score(self.xtest, self.ytest)
+        logging.info("Model reached accuracy %s", metric)
+        return metric

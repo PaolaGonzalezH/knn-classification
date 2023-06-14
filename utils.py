@@ -1,8 +1,38 @@
 import random
+import numpy as np
 from typing import List, Any
+from sklearn.decomposition import PCA
 from math import ceil
 from statistics import mean
+from sklearn.manifold import TSNE
+from scipy.spatial import distance
 import torch
+import umap
+
+
+def extrac_features_pca(data: List[float]) -> Any:
+    """Tansfomation of vector space of images with PCA
+
+    Args:
+        data (np.ndarray): Images matrix representation.
+
+    Returns:
+        (np.ndarray): Data transformed with components.
+    """
+    pca = PCA(n_components=32)
+    pca.fit(data)
+    return pca.transform(data)
+
+
+def extrac_features_umap(data, components=2):
+    um = umap.UMAP(n_components=components)
+    data_fit = um.fit(data)
+    data_umap = um.transform(data)
+    return data_fit, data_umap
+
+
+def cosine_distance(x1, x2):
+    return distance(x1, x2)
 
 
 def get_samples(amount: int, dataset: Any) -> Any:
