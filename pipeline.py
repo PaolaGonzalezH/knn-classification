@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=missing-module-docstring
 import warnings
 import logging
 import yaml
 from yaml.loader import SafeLoader
-import albumentations as A
+import albumentations as A  # type: ignore
 
-from KNNClassifier import KNNClassifier
+from knnclassifier import KNNClassifier
 from datasets import KNNDataset, Dataset
 
 warnings.simplefilter("ignore")
@@ -34,9 +35,17 @@ def main() -> None:
         configargs["histogram"],
         configargs["flatten"],
     )()
-
+    # def get _representation(images, type)
+    #    if type == 'pca':
+    #       return processing.pca(images)
+    #    if type == 'hist':
+    #       return processing.hist(images)
+    #    else:
+    #       raise NotImplementedError(f'{type} is not supported!')
+    # train_data = get_representation(train_data, configargs['repr'])
     # instantiate KNNDataset
-    processed_dataset = KNNDataset(train_data, train_labels, val_data, val_labels)
+    processed_dataset = KNNDataset(
+        train_data, train_labels, val_data, val_labels)
 
     model = KNNClassifier(processed_dataset, k=configargs["k"])
     model.train()

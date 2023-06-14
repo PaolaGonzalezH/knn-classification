@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=missing-module-docstring
 from dataclasses import dataclass
 from typing import Any
 import logging
 import numpy as np
-import torchvision
-import albumentations as A
+import torchvision  # type: ignore
+import albumentations as A  # type: ignore
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,9 +15,9 @@ class KNNDataset:
     """Dataset of KNN algorithm"""
 
     xtrain: np.ndarray
-    ytrain: np.array
+    ytrain: np.ndarray
     xtest: np.ndarray
-    ytest: np.array
+    ytest: np.ndarray
 
 
 class Dataset:
@@ -66,6 +67,7 @@ class Dataset:
             logging.warning(
                 "Histogram representation not in use, need a different representation."
             )
+
         for img, label in dataset:
             img = np.array(img)
             img = self.apply_augmentations(img)
@@ -81,3 +83,8 @@ class Dataset:
                 images.append(img.ravel())
             labels.append(label)
         return images, labels
+
+# processing.py
+# hist(data: np.ndarray) -> np.ndarray:
+#     if data.shape != (H, W, 3):
+#           raise ShapeError(f'input should have shape () but it has {data.shape}')
