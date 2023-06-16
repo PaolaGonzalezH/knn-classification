@@ -1,38 +1,25 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=missing-module-docstring
 import random
-import numpy as np
 from typing import List, Any
-from sklearn.decomposition import PCA
 from math import ceil
 from statistics import mean
-from sklearn.manifold import TSNE
-from scipy.spatial import distance
-import torch
-import umap
+import numpy as np  # type: ignore
+from scipy.spatial import distance  # type: ignore
+import torch  # type: ignore
 
 
-def extrac_features_pca(data: List[float]) -> Any:
-    """Tansfomation of vector space of images with PCA
+def cosine_distance(xone: np.ndarray, xtwo: np.ndarray) -> float:
+    """Cosine distance between two vectors u and v
 
     Args:
-        data (np.ndarray): Images matrix representation.
+        xone (np.array): vector u
+        xtwo (np.array): vector v
 
     Returns:
-        (np.ndarray): Data transformed with components.
+        (float): cosine distance
     """
-    pca = PCA(n_components=32)
-    pca.fit(data)
-    return pca.transform(data)
-
-
-def extrac_features_umap(data, components=2):
-    um = umap.UMAP(n_components=components)
-    data_fit = um.fit(data)
-    data_umap = um.transform(data)
-    return data_fit, data_umap
-
-
-def cosine_distance(x1, x2):
-    return distance(x1, x2)
+    return distance.cosine(xone, xtwo)
 
 
 def get_samples(amount: int, dataset: Any) -> Any:

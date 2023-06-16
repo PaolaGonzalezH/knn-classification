@@ -8,6 +8,7 @@ import albumentations as A  # type: ignore
 
 from knnclassifier import KNNClassifier
 from datasets import KNNDataset, Dataset
+from processing import get_representation, stack, green_change
 
 warnings.simplefilter("ignore")
 
@@ -23,33 +24,31 @@ def main() -> None:
     with open("config.yaml", encoding="utf-8") as file:
         configargs = yaml.load(file, Loader=SafeLoader)
 
-    augm_tr = A.Compose([A.Resize(100, 100, 3)])
-    augm_te = A.Compose([A.Resize(100, 100, 3)])
+    augm_tr = A.Compose([A.Resize(100, 100, 3), A.CenterCrop(50, 50)])
+    augm_te = A.Compose([A.Resize(100, 100, 3), A.CenterCrop(50, 50)])
 
-    train_data, train_labels = Dataset(
-        configargs["path_tr"], augm_tr, configargs["histogram"], configargs["flatten"]
-    )()
-    val_data, val_labels = Dataset(
-        configargs["path_tr"],
-        augm_te,
-        configargs["histogram"],
-        configargs["flatten"],
-    )()
-    # def get _representation(images, type)
-    #    if type == 'pca':
-    #       return processing.pca(images)
-    #    if type == 'hist':
-    #       return processing.hist(images)
-    #    else:
-    #       raise NotImplementedError(f'{type} is not supported!')
-    # train_data = get_representation(train_data, configargs['repr'])
+    train_data = Dataset(configargs["path_tr"])()
+    val_data = Dataset(configargs["path_te"])()
+
+    train_data = green_change(train_data, configargs["green_threshold"])
+    val_data = green_change(val_data, configargs["green_threshold"])
+
+    train_data, train_labels = get_representation(
+        train_data, configargs["repr"], augm_tr, True
+    )
+    val_data, val_labels = get_representation(
+        val_data, configargs["repr"], augm_te, True
+    )
     # instantiate KNNDataset
-    processed_dataset = KNNDataset(
-        train_data, train_labels, val_data, val_labels)
+    train_data = stack(train_data)
+    val_data = stack(val_data)
+    train_labels = stack(train_labels)
+    val_labels = stack(val_labels)
 
-    model = KNNClassifier(processed_dataset, k=configargs["k"])
+    processed_dataset = KNNDataset(train_data, train_labels, val_data, val_labels)
+
+    model = KNNClassifier(processed_dataset, k=configargs["k_neighbors"])
     model.train()
-    # predictions = np.asanyarray(model.predict())
     model.evaluate()
 
 

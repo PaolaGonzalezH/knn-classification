@@ -1,29 +1,24 @@
-from utils import mean_sample
-from utils import extrac_features_umap
-from datasets import KNNDataset, Dataset
-from sklearn.cluster import KMeans
-import albumentations as A
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import matplotlib
-import matplotlib.pyplot as plt
-import seaborn as sns
-import torchvision
-import umap
+# -*- coding: utf-8 -*-
+# pylint: disable=missing-module-docstring
 import warnings
+from sklearn.cluster import KMeans  # type: ignore
+import albumentations as A  # type: ignore
+import pandas as pd  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+import seaborn as sns  # type: ignore
+import torchvision  # type: ignore
+
+from datasets import Dataset
+from utils import mean_sample
+from processing import extrac_features_umap
 
 warnings.simplefilter("ignore")
 
 augm_tr = A.Compose([A.Resize(256, 256, 3)])
 augm_te = A.Compose([A.Resize(256, 256, 3)])
 
-train_data, train_labels = Dataset(
-    "~/Documents/block_one/17_flowers/train", augm_tr, flatten=True, histogram=True
-)()
-val_data, val_labels = Dataset(
-    "~/Documents/block_one/17_flowers/validation", augm_te, flatten=True, histogram=True
-)()
+train_data, train_labels = Dataset("~/Documents/block_one/17_flowers/train")()
+val_data, val_labels = Dataset("~/Documents/block_one/17_flowers/validation")()
 
 # Kmeans
 kmeans = KMeans(n_clusters=17, n_init=15, max_iter=500, random_state=0)
@@ -32,7 +27,7 @@ clusters = kmeans.fit_predict(train_data)
 centroids = kmeans.cluster_centers_
 
 
-_, train_umap = extrac_features_umap(train_data)
+_, train_umap, labels = extrac_features_umap(train_data, 2, augm_tr, True)
 umap_df = pd.DataFrame(data=train_umap, columns=["umap comp. 1", "umap comp. 2"])
 
 
