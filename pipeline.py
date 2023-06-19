@@ -24,14 +24,14 @@ def main() -> None:
     with open("config.yaml", encoding="utf-8") as file:
         configargs = yaml.load(file, Loader=SafeLoader)
 
-    augm_tr = A.Compose([A.Resize(100, 100, 3), A.CenterCrop(50, 50)])
-    augm_te = A.Compose([A.Resize(100, 100, 3), A.CenterCrop(50, 50)])
+    augm_tr = A.Compose([A.CenterCrop(250, 100)])
+    augm_te = A.Compose([A.CenterCrop(250, 100)])
 
     train_data = Dataset(configargs["path_tr"])()
     val_data = Dataset(configargs["path_te"])()
 
-    train_data = green_change(train_data, configargs["green_threshold"])
-    val_data = green_change(val_data, configargs["green_threshold"])
+    # train_data = green_change(train_data, configargs["green_threshold"])
+    # val_data = green_change(val_data, configargs["green_threshold"])
 
     train_data, train_labels = get_representation(
         train_data, configargs["repr"], augm_tr, True
@@ -47,9 +47,12 @@ def main() -> None:
 
     processed_dataset = KNNDataset(train_data, train_labels, val_data, val_labels)
 
-    model = KNNClassifier(processed_dataset, k=configargs["k_neighbors"])
+    model = KNNClassifier(
+        processed_dataset, k=configargs["k_neighbors"], weights=configargs["weights"]
+    )
     model.train()
     model.evaluate()
+    predictions = model.predict(val_data)
 
 
 if __name__ == "__main__":
